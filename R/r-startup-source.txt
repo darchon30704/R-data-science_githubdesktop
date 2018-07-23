@@ -1,0 +1,239 @@
+cusum = function (object, ...) {
+UseMethod("cusum")
+}
+
+cusum.data.frame = function (object, maxsum = 7L, digits = max(3L, getOption("digits") - 
+    3L), ...) 
+{
+    ncw <- function(x) {
+        z <- nchar(x, type = "w")
+        if (any(na <- is.na(z))) {
+            z[na] <- nchar(encodeString(z[na]), "b")
+        }
+        z
+    }
+    z <- lapply(X = as.list(object), FUN = cusum.default, maxsum = maxsum, 
+        digits = 12L, ...)
+    nv <- length(object)
+    nm <- names(object)
+    lw <- numeric(nv)
+    nr <- if (nv) 
+        max(unlist(lapply(z, NROW)))
+    else 0
+    for (i in seq_len(nv)) {
+        sms <- z[[i]]
+        if (is.matrix(sms)) {
+            cn <- paste(nm[i], gsub("^ +", "", colnames(sms), 
+                useBytes = TRUE), sep = ".")
+            tmp <- format(sms)
+            if (nrow(sms) < nr) 
+                tmp <- rbind(tmp, matrix("", nr - nrow(sms), 
+                  ncol(sms)))
+            sms <- apply(tmp, 1L, function(x) paste(x, collapse = "  "))
+            wid <- sapply(tmp[1L, ], nchar, type = "w")
+            blanks <- paste(character(max(wid)), collapse = " ")
+            wcn <- ncw(cn)
+            pad0 <- floor((wid - wcn)/2)
+            pad1 <- wid - wcn - pad0
+            cn <- paste0(substring(blanks, 1L, pad0), cn, substring(blanks, 
+                1L, pad1))
+            nm[i] <- paste(cn, collapse = "  ")
+            z[[i]] <- sms
+        }
+        else {
+            sms <- format(sms, digits=digits, drop0trailing=TRUE)
+            lbs <- format(names(sms))
+            sms <- paste0(lbs, ":", sms, "  ")
+            lw[i] <- ncw(lbs[1L])
+            length(sms) <- nr
+            z[[i]] <- sms
+        }
+    }
+    if (nv) {
+        z <- unlist(z, use.names = TRUE)
+        dim(z) <- c(nr, nv)
+        if (any(is.na(lw))) 
+            warning("probably wrong encoding in names(.) of column ", 
+                paste(which(is.na(lw)), collapse = ", "))
+        blanks <- paste(character(max(lw, na.rm = TRUE) + 2L), 
+            collapse = " ")
+        pad <- floor(lw - ncw(nm)/2)
+        nm <- paste0(substring(blanks, 1, pad), nm)
+        dimnames(z) <- list(rep.int("", nr), nm)
+    }
+    else {
+        z <- character()
+        dim(z) <- c(nr, nv)
+    }
+    attr(z, "class") <- c("table")
+    z
+}
+
+cusum.default = function (object, ..., digits = max(3L, getOption("digits") - 
+    3L)) 
+{
+    if (is.factor(object)) 
+        return(summary.factor(object, ...))
+    else if (is.matrix(object)) 
+        return(summary.matrix(object, digits = digits, ...))
+    value <- if (is.logical(object)) 
+        c(Mode = "logical", {
+            tb <- table(object, exclude = NULL)
+            if (!is.null(n <- dimnames(tb)[[1L]]) && any(iN <- is.na(n))) dimnames(tb)[[1L]][iN] <- "NA's"
+            tb
+        })
+    else if (is.numeric(object)) {
+        nas <- is.na(object)
+        object <- object[!nas]
+        qtl <- stats::quantile(object)
+        
+        len=length(object)
+        av=mean(object)
+        stdev=sd(object)
+        cv=100*sd(object)/mean(object)
+        se=sd(object)/sqrt(len)
+        sk=skewness(object, type=2)
+        kt=kurtosis(object, type=2)
+        skp=2*(1-pt(abs(sk/(sqrt(6/len))), len-1))
+        ktp=2*(1-pt(abs(kt/(sqrt(24/len))), len-1))
+        sh=shapiro.test(object)
+        sh2=sh[[2]]
+        #sh=as.numeric(shapiro.test(object))
+        #cv shows as Inf if mean is zero
+
+        qq <- c(len,signif(av,3),signif(stdev,3),round(cv,1),signif(se,2),signif(qtl[1L:5L],3),round(sk,2),round(kt,2))
+        if (skp<.1 | ktp<.1 | sh2<.1) qq <- c(qq,round(skp,3),round(ktp,3),round(sh2,3))
+
+        if (skp>=.1 & ktp>=.1 & sh2>=.1) names(qq) <- c("N","Mean","SD","CV%","SEM","Min.","1st Q","Median","3rd Q","Max.","Skew","Kurt.")
+        if (skp<.1 | ktp<.1 | sh2<.1) names(qq) <- c("N","Mean","SD","CV%","SEM","Min.","1st Q","Median","3rd Q","Max.","Skew","Kurt.","Skew p","Kurt p","norm ?")
+
+        if (any(nas)) 
+            c(qq, `NA's` = sum(nas))
+        else qq
+    }
+    else if (is.recursive(object) && !is.language(object) && 
+        (n <- length(object))) {
+        sumry <- array("", c(n, 3L), list(names(object), c("Length", 
+            "Class", "Mode")))
+        ll <- numeric(n)
+        for (i in 1L:n) {
+            ii <- object[[i]]
+            ll[i] <- length(ii)
+            cls <- oldClass(ii)
+            sumry[i, 2L] <- if (length(cls)) 
+                cls[1L]
+            else "-none-"
+            sumry[i, 3L] <- mode(ii)
+        }
+        sumry[, 1L] <- format(as.integer(ll))
+        sumry
+    }
+    else c(Length = length(object), Class = class(object), Mode = mode(object))
+    class(value) <- c("summaryDefault", "table")
+    value
+}
+
+cupairwise = function(x,group,ebars=1,horiz=FALSE,padj="none",
+     namex=NULL, namey=NULL, namegroup=NULL, main=NULL, 
+     ylab=NULL, log="", cilwd=1, dens=NULL,color=NULL){
+   if (is.null(namex)) namex=deparse(substitute(x))
+   if (is.null(namegroup)) namegroup=deparse(substitute(group))
+   if (is.null(main)) main=paste(namex, "at different levels of", namegroup)
+   # xloc = x
+   # grouploc = group
+   # names(xloc) = namex
+   # names(grouploc) = namegroup
+   cat(paste("\n",namex,"compared across",namegroup,"groups","\n\n"))
+   desc = by(x,group,cusum)
+   print(desc)
+   if (ebars != 4) {
+    DNAME <- paste(deparse(substitute(x)), "and", deparse(substitute(group)))
+    p.adjust.method <- "none"
+    g <- factor(group)
+    xbar <- tapply(x, g, mean, na.rm = TRUE)
+    s <- tapply(x, g, sd, na.rm = TRUE)
+    n <- tapply(!is.na(x), g, sum)
+    degf <- n - 1
+    total.degf <- sum(degf)
+    pooled.sd <- sqrt(sum(s^2 * degf)/total.degf)
+    METHOD <- paste("t tests with pooled SD", signif(pooled.sd,3))
+    compare.levels <- function(i, j) {
+        dif <- xbar[i] - xbar[j]
+        se.dif <- pooled.sd * sqrt(1/n[i] + 1/n[j])
+        t.val <- dif/se.dif
+        2 * pt(-abs(t.val), total.degf)
+     }
+     PVAL <- pairwise.table(compare.levels, levels(g), p.adjust.method)
+     ans <- list(method = METHOD, data.name = DNAME, p.value = PVAL, 
+        p.adjust.method = p.adjust.method)
+     class(ans) <- "pairwise.htest"
+     print(ans)
+   #  cat(paste("\nPooled SD =", signif(pooled.sd,3), "\n"))
+   }
+   # pw = pairwise.t.test(x,group,p.adj=padj)
+   if (ebars==4) pw = dunn.test(x,group,method=padj)
+   # if (ebars != 4) print(pw)
+   cubars(x,group,ebars=ebars,horiz=horiz,main=main,
+      ylab=ylab,log=log,cilwd=cilwd,dens=dens,color=color)
+ }
+
+cubars = function(x,group,ebars=1,horiz=FALSE,
+      namex=NULL, namey=NULL, namegroup=NULL,
+      main=NULL,ylab=NULL, log="", cilwd=1,dens=NULL,color=NULL){
+   if (is.null(namex)) namex=deparse(substitute(x))
+   if (is.null(namegroup)) namegroup=deparse(substitute(group))
+   if (is.null(main)) main=paste(namex, "at different levels of", namegroup)
+   avs = by(x,group,mean(x))
+   sds = by(x,group,sd(x))
+   ens = by(x,group,length(x))
+   ses = sds / sqrt(ens)
+   if (ebars==1){
+     ups = avs + sds; los = avs - sds; fn="Mean +/- SD"
+     }
+   if (ebars==2){
+     ups = avs + ses; los = avs - ses; fn="Mean +/- SE"
+     }
+   if (ebars==3){
+     cls = ses * 1.96
+     ups = avs + cls; los = avs - cls; fn="Mean and 95% CL"  
+     } 
+   if (ebars==4){
+     meds = by(x,group,median)
+     uqs = by(x,group,function(x) quantile(x,.75))
+     lqs = by(x,group,function(x) quantile(x,.25))
+     avs = meds; ups = uqs; los = lqs; fn="Median and IQ range"  
+     }
+   barplot2(avs, plot.ci=T, ci.l=los, ci.u=ups, sub=fn,horiz=horiz,
+     main=main, ylab=ylab, log=log, ci.lwd=cilwd, density=dens, axis.lty=1,
+     col=color)
+ }
+
+cuROC = function(LRobj, Case)
+  {
+  DepVar = deparse(substitute(Case))
+  mytab = table(fitted.values(LRobj) > 0.5, Case)
+  print(mytab)
+  PredObj = prediction(fitted(LRobj), Case)
+  perfAUC = performance(PredObj, measure="auc")
+  AUCtitle =  paste(DepVar, "\n", "AUC = ", strtrim(perfAUC@"y.values",5))
+  perfPlot = performance(PredObj, "tpr", "fpr")
+  ROCR::plot(perfPlot, main=AUCtitle)
+}
+
+cuKM = function(timevar, statvar, ttmtvar, kmType="Survival")
+  {
+  SurvTst = survdiff(Surv(timevar, statvar) ~ ttmtvar)
+  print(SurvTst)
+  SurvObj = survfit(Surv(timevar, statvar) ~ ttmtvar)
+  levs = levels(ttmtvar)
+  if (kmType=="Survival"){
+   plot(SurvObj, lty=2:3, ylab="Survival", mark.time=T, yscale=100)
+   legend("topright", levs, lty=2:3)
+   }
+  else {
+   plot(SurvObj, lty=2:3, fun="event", ylab="Cumulative Incidence", mark.time=T, yscale=100)
+   legend("topleft", levs, lty=2:3)
+   }
+}
+
+cat("Resource file v. 04/03/2017 \n")
