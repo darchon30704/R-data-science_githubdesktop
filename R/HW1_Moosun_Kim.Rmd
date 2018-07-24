@@ -253,6 +253,20 @@ Rename the blood_type_factor in the above example as follows
 ##
 
 ```{r eval=TRUE, comment="Console says:"}
+#Use the inequality operator (< or >) on a nominal category and print the output.
+blood_group_vector <- c("AB", "O", "B+", "AB-", "O", "AB", "A", "A", "B", "AB-")
+blood_group_vector
+# Create fatcors from the vector
+blood_group_factor <- factor(blood_group_vector)
+blood_group_factor
+print(blood_group_vector)
+paste(as.character(as.integer(blood_group_factor)), " ")
+# Define blood type
+blood_type <- c("B", "A", "AB", "A", "O")
+blood_type_factor <- factor(blood_type)
+blood_type_factor
+as.integer(blood_type_factor)
+str(blood_type_factor)
 blood_type <- c("A", "B", "AB", "O")
 
 as.integer(blood_type_factor)
@@ -269,11 +283,20 @@ blood_type_factor2
 <span style="color:blue">**Classwork/Homework**</span>:
 Use the inequality operator (< or >) on a nominal category and print the output. : 
 <br>
+
 ```{r eval=TRUE, comment="Console says:"}
 #Use the inequality operator (< or >) on a nominal category and print the output.
-
-blood_type <- c("A", "B", "AB", "O")
-
+blood_group_vector <- c("AB", "O", "B+", "AB-", "O", "AB", "A", "A", "B", "AB-")
+blood_group_vector
+# Create fatcors from the vector
+blood_group_factor <- factor(blood_group_vector)
+blood_group_factor
+print(blood_group_vector)
+paste(as.character(as.integer(blood_group_factor)), " ")
+# Define blood type
+blood_type <- c("B", "A", "AB", "A", "O")
+blood_type_factor <- factor(blood_type)
+blood_type_factor
 as.integer(blood_type_factor)
 str(blood_type_factor)
 blood_type_factor2<-factor(blood_type, ordered=TRUE, levels=c("A", "B", "AB", "O"))
@@ -290,7 +313,7 @@ blood_type_factor2
 What does patient[c(1,3)] give us? Is it a list or elements?
 What does patient[[c(1,3)] give us? Is it a list or elements?
 How about patient[[c(3,1)]? What is the difference? ( Hint: patient[[c(1,3)] is same as  patient[[1]][[3]]). 
-```{r eval=TRUE, comment="Console says:"}
+```{r eval=FALSE, comment="Console says:"}
 #What does patient[c(1,3)] give us? Is it a list or elements?
 blood_test <- list(Fluid="Blood sugar", Category="High", Value=140, Units="mg/dL")
 patient <- list(Name="Mike", Age=36, Btest=blood_test)
@@ -298,7 +321,7 @@ patient[c(1,3)]
 #gives elements of the B_test (3rd element)
 
 #What does patient[[c(1,3)] give us? Is it a list or elements?
-patient[[c(1,3)]]
+#patient[[c(1,3)]]
 #says subscript out of bounds
 #How about patient[[c(3,1)]? What is the difference? ( Hint: #patient[[c(1,3)] is same as  patient[[1]][[3]]). 
 #says subscript out of bounds. Supposed to say give the list element of the 3rd element (a list of patient
@@ -319,7 +342,7 @@ x
 <span style="color:blue">**Classwork/Homework**</span>:
 1.Examine the structure of the data frame.
 2. What happens if one of the vectors have unequal length? 
-```{r eval=TRUE, comment="Console says:"}
+```{r eval=FALSE, comment="Console says:"}
 #Examine the structure of the data frame.
 name <- c("Anne", "James", "Mike", "Betty")
 age <- c(20, 43, 27, 25)
@@ -367,7 +390,7 @@ df[["age"]] #give elements of age column
 <span style="color:blue">**Classwork/Homework**</span>:
 1. Use cbind() to append a vector of choice.
 2. What happens if the length of the appending vector is greater than (or less than) row dimensions? 
-```{r eval=TRUE, comment="Console says:"}
+```{r eval=FALSE, comment="Console says:"}
 # Use cbind() to append a vector of choice.
  
 name <- c("Anne", "James", "Mike", "Betty")
@@ -392,7 +415,7 @@ df
 <span style="color:blue">**Classwork/Homework**</span>:
 1. Can you use the list() function instead of the data frame function in the above code?
 2. What happens if you leave the arguments name=, age= etc. in the above code? 
-```{r eval=TRUE, comment="Console says:"}
+```{r eval=FALSE, comment="Console says:"}
 # 1. Can you use the list() function instead of the data frame function in the above code?
 
 name <- c("Anne", "James", "Mike", "Betty")
@@ -443,7 +466,7 @@ sort(df$age, decreasing = TRUE)
 
 ```{r eval=TRUE, comment="Console says:"}
 # 1. Is the above plot informative?
-
+library(RCurl)
 URL_text_1 <- "https://raw.githubusercontent.com/kannan-kasthuri/kannan-kasthuri.github.io"
 URL_text_2 <- "/master/Datasets/HANES/NYC_HANES_DIAB.csv"
 URL <- paste(URL_text_1, URL_text_2, sep="")
